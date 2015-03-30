@@ -1,0 +1,46 @@
+var gpio = require('rpi-gpio');
+var email = require("emailjs/email");
+var fault = 11;   //gpio pin number
+var server = email.server.connect({
+              user:      "User Name",  //enter user name of gmail account
+              password:  "Password",  //enter gmail password
+              host:      "smtp.gmail.com",
+              ssl: true});
+var laststate = true;
+
+gpio.setup(fault, gpio.DIR_IN,readInput);
+
+function readInput()
+{
+     gpio.read(fault, function(err, value){
+         if(laststate!=value)
+         {
+                console.log(translateStatus(value));
+                server.send({
+                text:    translateStatus(value),
+                from:    "Gustavo Preston Alert System <name@gmail.com>", //change add edit email and text recipients
+                to:      "<scottborucki@gustavopreston.com>",
+                subject: "Pump Station Notification"
+             }, function(err, message) { console.log(err || message);
+});
+          }
+          laststate = value;
+       });
+
+   setTimeout(readInput,1000);  //check status every second
+}
+
+
+function translateStatus(s){
+  if(s==true) return 'Pump Fault - Call 978-250-3333 Gustavo Preston Company for service '+getTime();
+  else return 'Pump Fault Clear '+getTime();
+}
+
+function getTime()
+         var h = new Date() .getHours();
+         var h = new Date() .getMinutes();
+         var m = new Date() .getSeconds();
+         if(h <10) h = '0'+h;
+         if(m <10) m = '0'+m;
+         if(s <10) s = '0'+s;
+         return h+':'+m+':'+s;
